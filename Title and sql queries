@@ -1,0 +1,103 @@
+
+0. Inserting data
+
+create table Policy_Detail(
+	PolicyId int,
+    StartDate date,
+    Location text,
+    State text,
+    Region text,
+    InsuredValue int,
+    Construction text,
+    BusinessType text,
+    Earthquake int,
+    Flood int);
+
+Load Data infile 'D:\one-click-test\one-click-test\sql_data\Policy_Detail.csv'
+into table Policy_Detail
+Fields terminated by ','
+Enclosed by '"'
+lines terminated by '\r\n'
+Ignore 1 rows;
+
+1. Select all the columns from Policy_Detail table with "Low" risk rating in the "East" region.
+
+SELECT pd.* 
+FROM policy_detail pd
+left JOIN policy_riskrating prr ON pd.PolicyID = prr.PolicyID
+left JOIN riskrating rr ON prr.RiskRating = rr.RiskRating
+WHERE rr.Description = 'Low' AND pd.Region = 'East';
+
+2. Write a query to give the month-on-month growth/decline (number of policies) percentage for each
+BusinessType. (make sure missing values are handled)
+
+WITH MonthlyPolicyCounts AS (
+    SELECT
+        BusinessType,
+        DATE_FORMAT(StartDate, '%Y-%m') AS Month,
+        COUNT(*) AS NumPolicies
+    FROM
+        policy_detail
+    GROUP BY
+        BusinessType,
+        DATE_FORMAT(StartDate, '%Y-%m')
+)
+SELECT
+    BusinessType,
+    Month,
+    NumPolicies,
+    ROUND(((NumPolicies - LAG(NumPolicies) OVER (PARTITION BY BusinessType ORDER BY Month)) / NULLIF(LAG(NumPolicies) OVER (PARTITION BY BusinessType ORDER BY Month), 0)) * 100, 2) AS GrowthPercentage
+FROM
+    MonthlyPolicyCounts;
+
+
+3.. What type of construction is the least and most affected by natural disasters ? (use query to return
+the answer)
+
+SELECT
+    Construction,
+    SUM(Earthquake) AS EarthquakeAffected,
+    SUM(Flood) AS FloodAffected,
+    SUM(Earthquake + Flood) AS TotalAffected
+FROM
+    policy_detail
+GROUP BY
+    Construction
+ORDER BY
+    TotalAffected ASC, Construction;
+
+4. Which region is the second least affected by natural disasters ? (use window function to return the
+answer)
+
+WITH RegionDisasterCounts AS (
+    SELECT
+        Region,
+        SUM(Earthquake + Flood) AS TotalAffected,
+        RANK() OVER (ORDER BY SUM(Earthquake + Flood)) AS RankByDisaster
+    FROM
+        policy_detail
+    GROUP BY
+        Region
+)
+SELECT
+    Region
+FROM
+    RegionDisasterCounts
+WHERE
+    RankByDisaster = 2;
+
+
+
+
+5. Each policy should have an estimated premium. Please create a new column 'YearlyPremium' that
+shows a reasonable yearly premium for each policy. You may consider but not limited to
+InsuredValue and PremiumAdjustment for the calculation.
+
+ALTER TABLE policy_detail
+ADD COLUMN YearlyPremium DECIMAL(10, 2);
+
+UPDATE policy_detail pd
+JOIN policy_riskrating prr ON pd.PolicyID = prr.PolicyID
+JOIN riskrating rr ON prr.RiskRating = rr.RiskRating
+SET pd.YearlyPremium = (CAST(pd.InsuredValue AS DECIMAL(20,2)) * CAST(rr.PremiumAdjustment AS DECIMAL(20,2)))
+WHERE pd.PolicyID IS NOT NULL;
