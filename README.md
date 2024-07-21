@@ -16,6 +16,7 @@ Visualization: Power BI
 - Policy Count and Goal Tracking: A card visual showing the total count of policies and progress towards set goals. Insight: Helps track the performance and targets in policy issuance.
 - Interactive Time Travel for Data Analysis: An interactive time slider to filter data based on specific date ranges, regions, and locations. Insight: Allows for dynamic data analysis and trend observation over time.
 # Dashboard Images
+https://app.powerbi.com/groups/me/reports/3a2e6ebe-c5e6-488c-bcc1-6ba878133ff0/ReportSection?experience=power-bi 
 
 ## SQL Queries Used
 
